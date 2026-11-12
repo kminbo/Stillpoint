@@ -1,0 +1,152 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system — "Frosted glass calm"
+ *
+ * Tokens map the direction's palette into semantic names. Colors are oklch.
+ * Fonts: Fraunces (display) + Inter (sans), loaded via <link> in __root.tsx.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-glass-border: var(--glass-border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-video-bed: var(--video-bed);
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --radius: 1.25rem;
+
+  --background: oklch(0.91 0.018 213);
+  --foreground: oklch(0.213 0.025 249);
+  --ink: oklch(0.213 0.025 249);
+  --ink-soft: oklch(0.52 0.031 246.7);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.213 0.025 249);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.213 0.025 249);
+
+  --primary: oklch(0.632 0.104 176.6);            /* mint */
+  --primary-foreground: oklch(1 0 0);
+  --primary-soft: oklch(0.808 0.102 178.6);       /* mint soft */
+
+  --secondary: oklch(0.955 0.012 210);
+  --secondary-foreground: oklch(0.213 0.025 249);
+  --muted: oklch(0.955 0.012 210);
+  --muted-foreground: oklch(0.52 0.031 246.7);
+  --accent: oklch(0.955 0.012 210);
+  --accent-foreground: oklch(0.213 0.025 249);
+
+  --destructive: oklch(0.647 0.165 16.1);         /* rose */
+  --destructive-foreground: oklch(1 0 0);
+  --warning: oklch(0.723 0.135 63.4);             /* amber */
+
+  --border: oklch(0.9 0.012 220);
+  --glass-border: oklch(1 0 0 / 70%);
+  --input: oklch(0.9 0.012 220);
+  --ring: oklch(0.632 0.104 176.6);
+  --video-bed: oklch(0.927 0.011 211);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--color-primary) 25%, transparent);
+  }
+}
+
+/* Ambient background drift + status animations */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-24px); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(18px, -14px); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  70% { transform: scale(1.6); opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility floaty {
+  animation: floaty 11s ease-in-out infinite;
+}
+@utility floaty2 {
+  animation: floaty 15s ease-in-out infinite reverse;
+}
+@utility drift {
+  animation: drift 20s ease-in-out infinite;
+}
+@utility pulse-ring {
+  animation: pulse-ring 2.6s ease-out infinite;
+}
+@utility blink {
+  animation: blink 1.6s ease-in-out infinite;
+}
+@utility rise-in {
+  animation: rise-in 0.55s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@utility glass-card {
+  background: color-mix(in oklch, var(--color-card) 55%, transparent);
+  backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: 0 40px 90px -40px oklch(0.213 0.025 249 / 55%);
+  border: 1px solid var(--color-glass-border);
+}
