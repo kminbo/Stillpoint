@@ -1,3 +1,7 @@
+# Remix setup
+- [x] Cleared copied Drizzle migrations and rescaffolded an empty migration set for this project's database; verified no leftover files, empty journal, empty applied-migrations table, and the live schema (5 tables, policies, grants, functions) intact with no rows.
+- [ ] Create the owner account and grant reviewer access; blocked: no accounts exist in this project's database yet, so nobody can open /review.
+
 # Usage review
 - [ ] Replace arbitrary comments with safe feedback choices; enforce database validation, aggregate-only AI input and restricted access; test bypass attempts.
 - [x] Add and verify the logo menu with browser-local profile, session settings, privacy and separate local/shared data deletion; profile persistence, settings sync and mobile menu checked.
