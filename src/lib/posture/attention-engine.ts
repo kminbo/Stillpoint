@@ -1,5 +1,4 @@
 import { classifyHeadDirection, type HeadTrackingOptions, type HeadSignal } from "./head-direction";
-import wasmBinary from "@/assets/vision_wasm_internal.wasm.asset.json";
 
 export type AttentionState = "loading" | "focused" | "away" | "head-tilted" | "unavailable";
 
@@ -86,7 +85,7 @@ export function createAttentionEngine(video: HTMLVideoElement, tracking: HeadTra
         const loaded = await FaceLandmarker.createFromOptions(
           {
             wasmLoaderPath: "/mediapipe/wasm/vision_wasm_internal.js",
-            wasmBinaryPath: wasmBinary.url,
+            wasmBinaryPath: "/mediapipe/wasm/vision_wasm_internal.wasm",
           },
           {
             baseOptions: { modelAssetPath: "/models/face_landmarker.task", delegate: "GPU" },

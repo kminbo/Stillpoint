@@ -1,5 +1,7 @@
-import { streamResponse, GatewayError as SdkGatewayError } from "@lovable.dev/ai-gateway";
 import { reviewInputSchema, reviewOutputSchema } from "../review-safety";
+
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const DEFAULT_MODEL = "gemini-2.5-flash";
 
 export interface Suggestion {
   title: string;
@@ -20,33 +22,38 @@ Respond with ONLY a JSON object: {"summary": string, "suggestions": [{"title": s
 
 export async function runReviewAgent(data: unknown): Promise<{ summary: string; suggestions: Suggestion[] }> {
   const safeInput = reviewInputSchema.parse(data);
+  const apiKey = process.env["GEMINI_API_KEY"]?.trim();
+  if (!apiKey) throw new GatewayError(500, "The review agent is not configured. Set GEMINI_API_KEY on the server.");
+  const model = process.env["GEMINI_MODEL"]?.trim() || DEFAULT_MODEL;
   let text = "";
+  let status = 500;
   try {
-    const result = await streamResponse({
-      model: "openai/gpt-6-astra",
-      instructions: INSTRUCTIONS,
-      input: [{ role: "user", content: `Return JSON. Aggregate product data:\n${JSON.stringify(safeInput)}` }],
-      reasoning: { effort: "medium", summary: "auto" },
-      include: ["reasoning.encrypted_content"],
-      tools: [],
-      text: { format: { type: "json_object" } },
+    // No tools are declared, so the model can only return text.
+    const response = await fetch(`${GEMINI_URL}/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: INSTRUCTIONS }] },
+        contents: [{ role: "user", parts: [{ text: `Return JSON. Aggregate product data:\n${JSON.stringify(safeInput)}` }] }],
+        generationConfig: { responseMimeType: "application/json" },
+      }),
     });
-    for await (const event of result) {
-      if (event.type === "response.output_text.delta") text += event.delta;
-      if (text.length > 20000) throw new GatewayError(500, "The review agent returned an invalid answer.");
-    }
-  } catch (e) {
-    const s = e instanceof SdkGatewayError ? e.httpStatus ?? 500 : 500;
+    status = response.status;
+    if (!response.ok) throw new Error(`Gemini request failed (${status})`);
+    const body = (await response.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    text = (body.candidates?.[0]?.content?.parts ?? []).map((part) => part.text ?? "").join("");
+  } catch {
     const msg =
-      s === 402
-        ? "AI credits have run out. Add credits in your workspace to keep using the review agent."
-        : s === 429
-          ? "Too many requests right now. Try again in a minute."
-          : s === 403
-            ? "AI access is blocked for this workspace."
+      status === 429
+        ? "Too many requests or the Gemini quota is used up. Try again later."
+        : status === 400 || status === 401 || status === 403
+          ? "The Gemini API key was rejected. Check GEMINI_API_KEY."
+          : status === 404
+            ? "The Gemini model was not found. Check GEMINI_MODEL."
             : "The review agent could not complete a safe review. Please try again later.";
-    throw new GatewayError(s, msg);
+    throw new GatewayError(status, msg);
   }
+  if (!text || text.length > 20000) throw new GatewayError(500, "The review agent returned an invalid answer.");
 
   try {
     return reviewOutputSchema.parse(JSON.parse(text));
