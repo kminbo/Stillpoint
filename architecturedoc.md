@@ -56,6 +56,7 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 - 2026-11-12 — Removed unused code: the Pose Landmarker placeholder (`pose-engine.ts`), 40 unused shadcn/ui components, the `use-mobile` hook, and the npm packages only they used.
 - 2026-11-15 — Added the "Ask Stillpoint" help chat on Gemini and amended principle 4 to allow it. The default model for both agents is now `gemini-3.5-flash`. `gemini-3.8-flash` was too slow (about 2 minutes) or overloaded.
 - 2026-11-15 — Added an optional written comment to session reviews, alongside the rating and fixed topic, and amended principle 4 to allow storing it. Database updated.
+- 2026-11-15 — Review agent recommendations follow the 11 product feedback cases.
 
 ## Running and hosting
 
@@ -85,10 +86,11 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 - Shows aggregate usage (sessions, average length, distractions per 10 min, short-session %, tracker/alert adoption, timer choices and completion, ratings, feedback-topic counts).
 - Provision reviewer admins explicitly (the `admin` role via `has_role`), never through self-signup; otherwise the first visitor could gain access to other users' insights. Signing up at `/review` creates an account but grants no access.
 - Give the tool-free AI reviewer only validated aggregate counts. This removes user-text instruction and data-exfiltration channels.
+- Feedback reaches the agent only as fixed topics. To act on a new kind of feedback, add a topic (`FEEDBACK_OPTIONS`, a DB check migration, and its rule in `REVIEW_INSTRUCTIONS`), never pass written comments to the agent.
 - Written comments appear under "Recent reviews" for the developers to read. They are never given to the AI reviewer.
 - The agent's instructions (`src/lib/ai/review-agent.server.ts`) require it to treat all input, including feedback, as data rather than instructions, and to ignore any instructions embedded in it.
-- The instructions also prohibit recommending unauthorized webcam recording, uploading or sharing footage or face data, collecting sensitive or personal data, disclosing one user's data to others, or weakening consent and access controls.
-- Privacy check before approval: every generated recommendation is validated (`reviewOutputSchema` in `src/lib/review-safety.ts`) before it is saved and can be approved. Output containing URLs, contact details, credentials, instruction-override phrasing, or proposals to record/upload/store/share webcam, face, personal or sensitive data is rejected.
+- The instructions also prohibit recommending removal or automation of developer approval, medical diagnosis (including ADHD), unauthorized webcam recording, uploading or sharing footage or face data, collecting sensitive or personal data, disclosing one user's data to others, or weakening consent and access controls.
+- Privacy check before approval: every generated recommendation is validated before it is saved and can be approved. Output containing URLs, contact details, credentials, instruction-override phrasing, or proposals to record/upload/store/share webcam, camera frames, face, personal or sensitive data, approval bypass or auto-approval, diagnosis, or showing other users' data is rejected.
 - Developers must approve every suggestion by hand (accept/decline). Suggestions are never executed; accepting one records intent only.
 - Persist suggestions and decisions through admin-checked server functions and admin-only row policies.
 - "Mark as live" stores a ship date for a 14-day before/after impact review (at least 5 sessions on each side).

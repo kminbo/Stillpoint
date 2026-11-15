@@ -24,7 +24,18 @@ export function buildReviewInput(sessions: UsageRow[], feedback: FeedbackRow[]) 
 
 // Defense in depth, not a semantic-security guarantee. The model has no tools,
 // user text, private rows, capabilities, credentials, or execution authority.
-const unsafeOutput = /https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.[a-z]{2,}|ignore.{0,40}(instruction|rule)|\b(api.?key|password|secret.?key|access.?token|social.?security)\b|\b(upload|record|store|save|share|send|collect)\b.{0,60}\b(video|footage|webcam|face data|personal data|sensitive|other users)\b/i;
+const unsafeOutput = new RegExp([
+  /https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.[a-z]{2,}/.source,
+  /ignore.{0,40}(instruction|rule)/.source,
+  /\b(api.?key|password|secret.?key|access.?token|social.?security)\b/.source,
+  /\b(upload|record|store|save|share|send|collect)\w*\b.{0,60}\b(video|footage|webcam|camera (feed|frames|images)|face data|personal data|sensitive (data|info\w*|details)|other users)\b/.source,
+  // Developer approval stays manual (feedback that asks to bypass it).
+  /\bauto(matic(ally)?)?[- ]?approv|\b(skip|bypass|disabl|remov|drop|without|no longer requir)\w*\b.{0,40}\bapproval\b/.source,
+  // No medical diagnosis.
+  /\bdiagnos\w*|\badhd\b/.source,
+  // No cross-user disclosure.
+  /\b(show|reveal|display|expose|disclose|list)\w*\b.{0,60}\b(other users|another user|everyone else|all users)\b/.source,
+].join("|"), "i");
 const safeText = z.string().trim().min(1).max(2000).refine((text) => !unsafeOutput.test(text), "Unsafe reviewer output");
 export const reviewOutputSchema = z.object({
   summary: safeText,

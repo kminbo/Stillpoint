@@ -1,4 +1,9 @@
-/** Fixed product feedback topics. The free-text note below is separate and never reaches an AI model. */
+/**
+ * Fixed product feedback topics. Only their counts reach the AI review agent; the
+ * free-text note below is separate and never reaches an AI model. Keep in sync
+ * with the check in supabase/migrations/20261115120000_feedback_topics.sql and
+ * the per-topic guidance in src/lib/ai/review-agent.server.ts.
+ */
 export const FEEDBACK_OPTIONS = [
   "",
   "Alerts felt too frequent",
@@ -8,6 +13,12 @@ export const FEEDBACK_OPTIONS = [
   "The session timer was helpful",
   "The app felt slow",
   "The session helped me focus",
+  "The screen blur was helpful",
+  "Alerts fired while I was just thinking",
+  "Looking down at notes counted as a distraction",
+  "Reminders interrupted my concentration",
+  "Fewer distractions, but not sure why",
+  "Remember my usual session length",
 ] as const;
 
 /**
