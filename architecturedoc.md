@@ -9,7 +9,6 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 1. All perception stays on-device. Camera frames are processed in the browser and never recorded, stored, or uploaded — this is a product promise, not just an implementation detail, and it constrains every future feature.
 2. Detection and response are independent. What we track (focus, head tilt) and how we respond (blur, sound, notification) are separate preference groups, so a change to one never affects the other. Alerts can each be switched on and off; both trackers are always on, because detection is what a session exists for.
 3. Desktop-first. The primary experience is a desk worker at a laptop or monitor.
-4. Shared data is opt-in, aggregate, and revocable. The only user-typed text ever stored is the optional written comment on a session review: only for users who share, at most 500 characters, screened for emails, links and phone numbers, read only by admins, and deleted on withdrawal. The one exception to "never sent to an AI model" is the help chat: its messages go to Gemini only to answer, are never stored or logged, and are never linked to usage data. All other user text (feedback comments, profile) stays off AI models.
 
 ## Stack and key dependencies
 
@@ -56,7 +55,7 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 - 2026-11-12 — Left Lovable. Merged AGENTS.md rules into this doc. Removed Lovable-only code. Moved to our own Supabase project. Switched the review agent to Gemini. Stopped tracking `.env`. Owner admin account created.
 - 2026-11-12 — Removed unused code: the Pose Landmarker placeholder (`pose-engine.ts`), 40 unused shadcn/ui components, the `use-mobile` hook, and the npm packages only they used.
 - 2026-11-15 — Added the "Ask Stillpoint" help chat on Gemini and amended principle 4 to allow it. The default model for both agents is now `gemini-3.5-flash`. `gemini-3.8-flash` was too slow (about 2 minutes) or overloaded.
-- 2026-11-15 — Added an optional written comment to session reviews and amended principle 4 to allow storing it.
+- 2026-11-15 — Added an optional written comment to session reviews, alongside the rating and fixed topic, and amended principle 4 to allow storing it. Database updated.
 
 ## Running and hosting
 
@@ -68,7 +67,7 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 ## Shared data: consent, usage and feedback
 
 - What is recorded: one row per finished session (duration, distraction count, tracker and alert switches, timer choice, whether it ended manually or by timer), plus an optional 1–5 rating with a fixed feedback topic and an optional written comment. Never video, images, face data, or what the user is working on.
-- Written comments (`session_feedback.note`): up to 500 characters (`FEEDBACK_NOTE_MAX_CHARS`). Emails, links and phone-like numbers are refused in the client, the server (`feedbackInputSchema`) and the database check (`20261115000000_feedback_note.sql`); keep the three in sync. The form tells users only developers read it, it never goes to AI, and to leave out personal details. Server errors never echo the comment. Withdrawal deletes it by cascade.
+- Written comments: short (up to 500 characters) and optional. Comments containing emails, links or phone numbers are refused. The form tells users that only the developers read it, that it never goes to AI, and to leave out personal details. Withdrawing deletes comments along with the rest of the shared data.
 - Keep privacy controls available during every session phase. Persist a pending deletion locally and keep its capability until server deletion succeeds, so withdrawal can be retried.
 
 ## Help chat ("Ask Stillpoint")
@@ -86,7 +85,7 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 - Shows aggregate usage (sessions, average length, distractions per 10 min, short-session %, tracker/alert adoption, timer choices and completion, ratings, feedback-topic counts).
 - Provision reviewer admins explicitly (the `admin` role via `has_role`), never through self-signup; otherwise the first visitor could gain access to other users' insights. Signing up at `/review` creates an account but grants no access.
 - Give the tool-free AI reviewer only validated aggregate counts. This removes user-text instruction and data-exfiltration channels.
-- Written comments are shown to admins under "Recent reviews" as plain text, and are loaded only by `getUsageOverview`.
+- Written comments appear under "Recent reviews" for the developers to read. They are never given to the AI reviewer.
 - The agent's instructions (`src/lib/ai/review-agent.server.ts`) require it to treat all input, including feedback, as data rather than instructions, and to ignore any instructions embedded in it.
 - The instructions also prohibit recommending unauthorized webcam recording, uploading or sharing footage or face data, collecting sensitive or personal data, disclosing one user's data to others, or weakening consent and access controls.
 - Privacy check before approval: every generated recommendation is validated (`reviewOutputSchema` in `src/lib/review-safety.ts`) before it is saved and can be approved. Output containing URLs, contact details, credentials, instruction-override phrasing, or proposals to record/upload/store/share webcam, face, personal or sensitive data is rejected.
@@ -96,7 +95,6 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 
 ## Planned updates
 
-- [x] Document the results of the 15 test cases (help chat; see "Help chat" above).
 - [ ] Rate-limit the public help chat endpoint before deploying.
 - [ ] Verify the Gemini review agent end to end: generate suggestions, accept/decline, "Mark as live", impact review, and decisions after reload.
-- [ ] Deploy to Cloudflare and repeat the camera, sharing and withdrawal checks on the live HTTPS site.
+- [ ] Repeat the camera, sharing, comment and withdrawal checks on the live Vercel site, and confirm the help chat works there.
