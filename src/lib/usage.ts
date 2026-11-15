@@ -24,9 +24,10 @@ export async function recordUsage(input: UsageInput): Promise<string | null> {
   } catch { return null; }
 }
 
-export async function submitFeedback(sessionId: string, rating: number, comment: string) {
+export async function submitFeedback(sessionId: string, rating: number, comment: string, note = "") {
   const token = consentToken();
   if (!mayShareWithToken(token)) throw new Error("Sharing is off. Your review was not sent.");
-  const input = feedbackInputSchema.parse({ session_id: sessionId, rating, comment });
+  const trimmed = note.trim();
+  const input = feedbackInputSchema.parse({ session_id: sessionId, rating, comment, ...(trimmed ? { note: trimmed } : {}) });
   await manageUsage({ data: { token, action: "feedback", input } });
 }

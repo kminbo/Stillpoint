@@ -6,7 +6,8 @@ import { consentActionSchema } from "./usage-schema";
 export const manageUsage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const checked = consentActionSchema.safeParse(input);
-    if (!checked.success) throw new Error("Invalid sharing request. Choose a fixed feedback topic; custom text and additional fields are not accepted.");
+    // Generic message: never echo the user's comment back into errors or logs.
+    if (!checked.success) throw new Error("Invalid sharing request. Check your rating and comment (no emails, links or phone numbers) and try again.");
     return checked.data;
   })
   .handler(async ({ data }) => {

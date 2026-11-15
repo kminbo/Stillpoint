@@ -6,7 +6,7 @@ import type { UsageConsent } from "@/lib/usage-consent";
 const DETAILS = [
   "Session length and how many times you looked away or tilted your head",
   "Which nudges you had on (blur, sound, notification) and your timer choice",
-  "Your optional 1–5 rating and selected feedback topic after a session",
+  "Your optional 1–5 rating, feedback topic and short written comment after a session",
 ];
 
 export function UsageConsentCard({ consent, onChange, busy = false, pending = false, message, onRetry }: {
@@ -23,8 +23,8 @@ export function UsageConsentCard({ consent, onChange, busy = false, pending = fa
     <div className="mt-3 space-y-2 text-[12px] text-ink-soft">
       <p className="font-semibold text-ink">What is shared, if you say yes:</p>
       <ul className="list-disc space-y-1 pl-5">{DETAILS.map((d) => <li key={d}>{d}</li>)}</ul>
-      <p><span className="font-semibold text-ink">Never collected:</span> camera video, pictures or face data. We do not attach your name or email. Reviews accept only fixed feedback topics, not personal details or written instructions. Your camera is processed on this computer only.</p>
-      <p><span className="font-semibold text-ink">How it's used:</span> the private owner review page shows session insights and feedback topics. Only combined numbers and topic counts go to the AI service to suggest improvements. Other users cannot see your shared data.</p>
+      <p><span className="font-semibold text-ink">Never collected:</span> camera video, pictures or face data. We do not attach your name or email. Please leave personal details out of comments; emails, links and phone numbers are refused. Your camera is processed on this computer only.</p>
+      <p><span className="font-semibold text-ink">How it's used:</span> the private owner review page shows session insights, feedback topics and comments. Only combined numbers and topic counts go to the AI service to suggest improvements; your comments never do. Other users cannot see your shared data.</p>
       <p><span className="font-semibold text-ink">Withdraw any time:</span> turn sharing off to stop collection and delete linked session statistics and feedback. Your focus history saved only on this browser stays here.</p>
       <p>A private deletion key is saved in this browser. Clearing browser storage or using another browser removes access to that key. Older statistics collected before deletion keys were introduced cannot be matched to you. Previously generated combined insights cannot be individually undone.</p>
     </div>

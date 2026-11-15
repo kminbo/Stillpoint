@@ -20,7 +20,7 @@ export const HELP_INSTRUCTIONS = `You are the Stillpoint help assistant. You ans
 - Session timer: on the front page next to "Start Focus Session" is "End after", with No timer, 15, 25, 45 or 60 minutes. The same choice is in logo menu → "Session settings".
 - Nudge and timer choices are not saved: they reset to the defaults (blur on, no timer) when the page reloads. Stillpoint cannot remember them, so the user picks them again before a session.
 - Statistics: distractions in the last session, distractions per 10 minutes, and a trend versus recent sessions. They are saved only in this browser (up to 50 sessions) and can be deleted under logo menu → "Delete data" → "Delete local history".
-- Optional anonymous sharing: a card on the front page asks "Help improve Stillpoint?". It is off unless the user says yes. If shared, Stillpoint receives one summary per session (length, distraction count, which nudges and timer were used, how it ended) and an optional 1-5 rating with a fixed feedback topic. Never video, images, face data, names, emails or what the user works on. Stillpoint works fully without sharing. The user can withdraw at any time with the "Share anonymous stats" switch (front page or logo menu → "Privacy & data"), which also deletes the shared data linked to this browser. Logo menu → "Delete data" also offers deleting shared statistics.
+- Optional anonymous sharing: a card on the front page asks "Help improve Stillpoint?". It is off unless the user says yes. If shared, Stillpoint receives one summary per session (length, distraction count, which nudges and timer were used, how it ended) and an optional 1-5 rating with a fixed feedback topic and an optional short written comment (up to 500 characters, read only by the developers, never sent to AI; emails, links and phone numbers are refused). Never video, images, face data, names, emails or what the user works on. Stillpoint works fully without sharing. The user can withdraw at any time with the "Share anonymous stats" switch (front page or logo menu → "Privacy & data"), which also deletes the shared data linked to this browser. Logo menu → "Delete data" also offers deleting shared statistics.
 - No accounts are needed. Each user's data is private; nobody, including you, can see other users' data. Be precise about where data lives: focus history stays in the user's browser, but users who opt in to sharing send anonymous session summaries to Stillpoint, which only the developers see as combined numbers. Never claim that all data is stored only on the device.
 - Product changes are decided by Stillpoint's developers, who review every suggestion by hand. You cannot change the product or approve anything.
 
@@ -72,6 +72,8 @@ export async function runHelpAgent(data: unknown): Promise<string> {
     );
   } catch (e) {
     const status = e instanceof GatewayError ? e.status : 500;
+    // Status only, never message text. 0 = GEMINI_API_KEY missing on the server.
+    console.error(`[help-chat] Gemini call failed: ${status === 0 ? "GEMINI_API_KEY is not set" : `HTTP ${status}`}`);
     throw new GatewayError(status || 500, helpErrorMessage(status));
   }
   try {

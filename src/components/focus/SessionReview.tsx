@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FEEDBACK_OPTIONS } from "@/lib/feedback-options";
+import { FEEDBACK_NOTE_MAX_CHARS, FEEDBACK_OPTIONS } from "@/lib/feedback-options";
 import { feedbackInputSchema } from "@/lib/usage-schema";
 import { submitFeedback } from "@/lib/usage";
 
 export function SessionReview({ sessionId, onClose }: { sessionId: string; onClose: () => void }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [note, setNote] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -21,11 +22,13 @@ export function SessionReview({ sessionId, onClose }: { sessionId: string; onClo
   }
 
   const send = async () => {
-    const checked = feedbackInputSchema.safeParse({ session_id: sessionId, rating, comment });
-    if (!checked.success) { setError("Choose a rating and an optional feedback topic."); return; }
+    const trimmed = note.trim();
+    const checked = feedbackInputSchema.safeParse({ session_id: sessionId, rating, comment, ...(trimmed ? { note: trimmed } : {}) });
+    if (!checked.success) { setError(checked.error.issues[0]?.message ?? "Choose a rating first."); return; }
+    setError(null);
     setState("sending");
     try {
-      await submitFeedback(sessionId, rating, comment);
+      await submitFeedback(sessionId, rating, comment, trimmed);
       setState("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not send.");
@@ -65,6 +68,20 @@ export function SessionReview({ sessionId, onClose }: { sessionId: string; onClo
           {FEEDBACK_OPTIONS.filter(Boolean).map((topic) => <SelectItem key={topic} value={topic}>{topic}</SelectItem>)}
         </SelectContent>
       </Select>
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        maxLength={FEEDBACK_NOTE_MAX_CHARS}
+        rows={3}
+        aria-label="Optional comment"
+        aria-describedby="review-note-hint"
+        placeholder="Anything else? (optional)"
+        className="mt-3 w-full resize-none rounded-xl border border-input bg-card/60 px-3 py-2 text-[13px] text-ink placeholder:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <p id="review-note-hint" className="mt-1 flex justify-between gap-3 text-[11px] text-ink-soft">
+        <span>Only Stillpoint's developers read this; it is never sent to AI. Please don't include names, emails or other personal details.</span>
+        <span aria-hidden="true">{note.length}/{FEEDBACK_NOTE_MAX_CHARS}</span>
+      </p>
       {error && <p className="mt-2 text-[12px] text-destructive">{error}</p>}
       <Button onClick={send} disabled={rating === 0 || state === "sending"} className="mt-3 rounded-full">
         {state === "sending" ? "Sending…" : "Send review"}

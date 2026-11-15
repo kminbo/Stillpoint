@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FEEDBACK_OPTIONS } from "./feedback-options";
+import { FEEDBACK_NOTE_MAX_CHARS, FEEDBACK_OPTIONS, noteHasPersonalDetails } from "./feedback-options";
 
 export const consentTokenSchema = z.string().regex(/^[0-9a-f]{64}$/);
 export const usageInputSchema = z.object({
@@ -16,7 +16,11 @@ export const usageInputSchema = z.object({
 export const feedbackInputSchema = z.object({
   session_id: z.string().uuid(),
   rating: z.number().int().min(1).max(5),
-  comment: z.enum(FEEDBACK_OPTIONS, { errorMap: () => ({ message: "Choose a feedback topic; personal information and custom instructions are not accepted." }) }),
+  comment: z.enum(FEEDBACK_OPTIONS, { errorMap: () => ({ message: "Choose a feedback topic from the list." }) }),
+  // Sent only when non-empty, so an empty note never adds a key.
+  note: z.string().trim().min(1).max(FEEDBACK_NOTE_MAX_CHARS, `Keep your comment under ${FEEDBACK_NOTE_MAX_CHARS} characters.`)
+    .refine((note) => !noteHasPersonalDetails(note), "Please remove emails, links and phone numbers from your comment.")
+    .optional(),
 }).strict();
 export const consentActionSchema = z.discriminatedUnion("action", [
   z.object({ token: consentTokenSchema, action: z.literal("record"), input: usageInputSchema }).strict(),

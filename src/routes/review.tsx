@@ -188,7 +188,12 @@ function Dashboard() {
           <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-soft">Recent reviews</p>
           <ul className="space-y-2">
             {overview.comments.map((c, i) => (
-              <li key={i} className="text-[13px]"><span className="font-semibold">{c.rating}/5</span> — {c.comment}</li>
+              <li key={i} className="text-[13px]">
+                <span className="font-semibold">{c.rating}/5</span>
+                {c.topic && <> — {c.topic}</>}
+                {/* Rendered as plain text by React; never sent to the AI review agent. */}
+                {c.note && <p className="mt-0.5 whitespace-pre-wrap break-words text-ink-soft">“{c.note}”</p>}
+              </li>
             ))}
           </ul>
         </div>

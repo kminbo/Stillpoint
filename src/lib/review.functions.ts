@@ -29,12 +29,24 @@ export const getUsageOverview = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { sessions, feedback } = await loadUsage(context.supabase);
-    const { data: suggestions, error } = await context.supabase.from("review_suggestions").select("*").order("created_at", { ascending: false }).limit(200);
+    const [{ data: suggestions, error }, recent] = await Promise.all([
+      context.supabase.from("review_suggestions").select("*").order("created_at", { ascending: false }).limit(200),
+      // Written notes are for human reviewers only. They are loaded here and
+      // never in loadUsage, which feeds the AI review agent.
+      context.supabase.from("session_feedback").select("rating, comment, note, created_at")
+        .or("comment.not.is.null,note.not.is.null").order("created_at", { ascending: false }).limit(50),
+    ]);
     if (error) throw new Error("Could not load saved suggestions.");
+    if (recent.error) throw new Error("Could not load recent reviews.");
     return {
       summary: summarizeUsage(sessions, feedback),
       suggestions: suggestions ?? [],
-      comments: feedback.filter((f): f is typeof f & { comment: string } => Boolean(f.comment)).slice(0, 20),
+      comments: (recent.data ?? []).map((row) => ({
+        rating: row.rating,
+        topic: FEEDBACK_OPTIONS.some((topic) => topic === row.comment) ? row.comment : null,
+        note: row.note,
+        created_at: row.created_at,
+      })),
     };
   });
 
