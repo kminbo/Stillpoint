@@ -11,6 +11,7 @@ import { StillpointMenu } from "@/components/focus/StillpointMenu";
 import { recordUsage } from "@/lib/usage";
 import { SessionReview } from "@/components/focus/SessionReview";
 import { UsageConsentCard } from "@/components/focus/UsageConsentCard";
+import { HelpChat } from "@/components/focus/HelpChat";
 import { mayCollect, readConsent } from "@/lib/usage-consent";
 import { useUsageConsent } from "@/hooks/use-usage-consent";
 import { Button } from "@/components/ui/button";
@@ -180,6 +181,7 @@ function FocusApp() {
             onSessionMinutesChange={setSessionMinutes}
           />
         )}
+        {phase === "intro" && <HelpChat />}
         {phase === "calibrating" && <CalibrationScreen stream={stream} countdown={countdown} />}
         {phase === "session" && <SessionScreen stream={stream} elapsed={elapsed} onEnd={() => handleEnd("manual")} alerts={alerts} distractions={distractions} onDistraction={handleDistraction} tracking={trackingPrefs} remainingSeconds={remainingSeconds} />}
 
