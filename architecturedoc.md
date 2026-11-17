@@ -57,6 +57,7 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 - 2026-11-15 — Added the "Ask Stillpoint" help chat on Gemini and amended principle 4 to allow it. The default model for both agents is now `gemini-3.5-flash`. `gemini-3.8-flash` was too slow (about 2 minutes) or overloaded.
 - 2026-11-15 — Added an optional written comment to session reviews, alongside the rating and fixed topic, and amended principle 4 to allow storing it. Database updated.
 - 2026-11-15 — Review agent recommendations follow the 11 product feedback cases.
+- 2026-11-17 — Fixed background detection on macOS Chrome. In a hidden tab, the detection loop now takes frames straight from the camera track (`ImageCapture.grabFrame`), not from the `<video>`, which stops updating there. A worker timer drives the loop so Chrome cannot slow it down.
 
 ## Running and hosting
 

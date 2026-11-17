@@ -13,6 +13,28 @@ const RETURN_DELAY_MS = 120;
 const REFOCUS_DELAY_MS = 400;
 const SAMPLE_INTERVAL_MS = 100;
 
+// Chrome's ImageCapture is not in the TS DOM lib yet.
+type FrameGrabber = { grabFrame(): Promise<ImageBitmap> };
+type FrameGrabberCtor = new (track: MediaStreamTrack) => FrameGrabber;
+
+/**
+ * Ticks from a dedicated worker. Main-thread timers in a hidden tab are throttled
+ * to 1/s, and to 1/min after a few minutes; worker timers are not.
+ */
+function createTicker(intervalMs: number, onTick: () => void) {
+  try {
+    const source = `setInterval(() => postMessage(0), ${intervalMs});`;
+    const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+    const worker = new Worker(url);
+    URL.revokeObjectURL(url);
+    worker.onmessage = onTick;
+    return () => worker.terminate();
+  } catch {
+    const id = window.setInterval(onTick, intervalMs);
+    return () => window.clearInterval(id);
+  }
+}
+
 export interface AttentionEngine {
   init(): Promise<void>;
   start(): void;
@@ -24,13 +46,18 @@ export interface AttentionEngine {
  * Watches head direction and tilt, independent of sitting position and distance.
  * Frames and landmarks never leave the browser; only a coarse state is emitted.
  */
-export function createAttentionEngine(video: HTMLVideoElement, tracking: HeadTrackingOptions = { focus: true, posture: true }): AttentionEngine {
+export function createAttentionEngine(
+  video: HTMLVideoElement,
+  tracking: HeadTrackingOptions = { focus: true, posture: true },
+): AttentionEngine {
   const listeners = new Set<AttentionListener>();
   let landmarker: import("@mediapipe/tasks-vision").FaceLandmarker | null = null;
   let running = false;
   let disposed = false;
-  let frameId: number | null = null;
-  let lastSample = 0;
+  let stopTicker: (() => void) | null = null;
+  let busy = false;
+  let grabber: FrameGrabber | null = null;
+  let grabberTrack: MediaStreamTrack | null = null;
   let lastVideoTime = -1;
   let candidate: Signal = "focused";
   let candidateSince = 0;
@@ -59,23 +86,56 @@ export function createAttentionEngine(video: HTMLVideoElement, tracking: HeadTra
     if (now - candidateSince >= delay) emit(next);
   };
 
-  const loop = () => {
-    if (!running || !landmarker) return;
-    const now = performance.now();
-
-    if (
-      video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-      video.currentTime !== lastVideoTime &&
-      now - lastSample >= SAMPLE_INTERVAL_MS
-    ) {
-      lastSample = now;
-      lastVideoTime = video.currentTime;
-      const result = landmarker.detectForVideo(video, now);
-      const headMatrix = result.facialTransformationMatrixes[0]?.data;
-      observe(classifyHeadDirection(headMatrix, current, tracking), now);
+  /**
+   * In a hidden tab Chrome may stop painting new frames into the <video>
+   * (it does on macOS), so detection would keep seeing the last visible frame.
+   * Pull frames straight from the camera track instead.
+   */
+  const grabHiddenFrame = async (): Promise<ImageBitmap | null> => {
+    const Ctor = (window as unknown as { ImageCapture?: FrameGrabberCtor }).ImageCapture;
+    const track =
+      video.srcObject instanceof MediaStream ? video.srcObject.getVideoTracks()[0] : undefined;
+    if (!Ctor || !track || track.readyState !== "live") return null;
+    if (grabberTrack !== track) {
+      grabber = new Ctor(track);
+      grabberTrack = track;
     }
+    try {
+      return (await grabber?.grabFrame()) ?? null;
+    } catch {
+      return null;
+    }
+  };
 
-    frameId = window.setTimeout(loop, SAMPLE_INTERVAL_MS);
+  const detect = (source: TexImageSource, now: number) => {
+    if (!landmarker) return;
+    const result = landmarker.detectForVideo(source, now);
+    const headMatrix = result.facialTransformationMatrixes[0]?.data;
+    observe(classifyHeadDirection(headMatrix, current, tracking), now);
+  };
+
+  const tick = async () => {
+    if (!running || !landmarker || busy) return;
+    busy = true;
+    try {
+      if (document.hidden) {
+        const frame = await grabHiddenFrame();
+        if (frame) {
+          if (running && landmarker) detect(frame, performance.now());
+          frame.close();
+          return;
+        }
+      }
+      if (
+        video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+        video.currentTime !== lastVideoTime
+      ) {
+        lastVideoTime = video.currentTime;
+        detect(video, performance.now());
+      }
+    } finally {
+      busy = false;
+    }
   };
 
   return {
@@ -111,13 +171,15 @@ export function createAttentionEngine(video: HTMLVideoElement, tracking: HeadTra
       if (running || !landmarker) return;
       running = true;
       candidateSince = performance.now();
-      frameId = window.setTimeout(loop, SAMPLE_INTERVAL_MS);
+      stopTicker = createTicker(SAMPLE_INTERVAL_MS, () => void tick());
     },
     stop() {
       disposed = true;
       running = false;
-      if (frameId !== null) window.clearTimeout(frameId);
-      frameId = null;
+      stopTicker?.();
+      stopTicker = null;
+      grabber = null;
+      grabberTrack = null;
       landmarker?.close();
       landmarker = null;
     },
