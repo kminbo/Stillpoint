@@ -1,7 +1,8 @@
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 // gemini-2.5-flash is retired for new keys (404). gemini-3.8-flash answered in
-// ~2 minutes or 503 during testing; gemini-3.5-flash answers in ~2 seconds.
-const DEFAULT_MODEL = "gemini-3.5-flash";
+// ~2 minutes or 503 during testing. On 2026-11-21 gemini-3.5-flash took 18-45s
+// while gemini-3.5-flash-lite answered in ~1s and passed all 15 help-chat cases.
+const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 
 export class GatewayError extends Error {
   constructor(public status: number, message: string) {

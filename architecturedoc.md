@@ -17,7 +17,7 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 - `@mediapipe/tasks-vision` (Face Landmarker) — runs locally in the browser for attention detection: head turn, looking up, and head tilt. Chosen because it needs no server and honors principle 1.
 - localStorage — session history (up to 50 sessions) for the distraction trend, the preset profile label, and consent state. Deliberately chosen so stats work with zero accounts and zero backend.
 - Supabase — stores usage rows, feedback (fixed topic plus optional written comment), reviewer suggestions and decisions.
-- Google Gemini API — runs the review agent on the reviewer page and the user help chat (default `gemini-3.5-flash`, override with `GEMINI_MODEL`). Both share one tool-free, JSON-only call in `src/lib/ai/gemini.server.ts`.
+- Google Gemini API — runs the review agent on the reviewer page and the user help chat (default `gemini-3.5-flash-lite`, override with `GEMINI_MODEL`). Both share one tool-free, JSON-only call in `src/lib/ai/gemini.server.ts`.
 - zod — strict client/server schemas for every shared-data and AI input/output.
 
 ## Dependencies to avoid
@@ -58,6 +58,7 @@ Stillpoint — a desktop web app that watches your head direction and head tilt 
 - 2026-11-15 — Added an optional written comment to session reviews, alongside the rating and fixed topic, and amended principle 4 to allow storing it. Database updated.
 - 2026-11-15 — Review agent recommendations follow the 11 product feedback cases.
 - 2026-11-17 — Fixed background detection on macOS Chrome. In a hidden tab, the detection loop now takes frames straight from the camera track (`ImageCapture.grabFrame`), not from the `<video>`, which stops updating there. A worker timer drives the loop so Chrome cannot slow it down.
+- 2026-11-21 — The default model for both agents is now `gemini-3.5-flash-lite`. `gemini-3.5-flash` took 18-45 seconds or timed out, which broke the help chat on Vercel. The Lite model answers in about 1 second and passed all 15 help chat test cases. The review agent has not been re-tested on it.
 
 ## Running and hosting
 
